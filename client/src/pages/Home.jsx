@@ -202,6 +202,7 @@ export default function Home() {
 
             <footer style={{ textAlign: 'center', marginTop: '4rem', padding: '2rem 0', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
                 <p>&copy; {new Date().getFullYear()} Aidlyn. Secured with modern cryptography.</p>
+                <p style={{ marginTop: '0.5rem', opacity: 0.7 }}>Crafted with precision by <strong>Prashant Maurya & Pushpak</strong></p>
             </footer>
         </div>
     );

@@ -474,6 +474,7 @@ export default function Dashboard() {
 
             <div className="text-center mt-8 text-xs text-muted" style={{ opacity: 0.5 }}>
                 <p>Aidlyn v1.0 &bull; AES-256 Encrypted Communication</p>
+                <p style={{ marginTop: '0.25rem' }}>Developed by Prashant Maurya & Pushpak</p>
             </div>
         </div>
     );

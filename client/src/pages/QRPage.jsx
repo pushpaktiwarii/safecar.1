@@ -31,11 +31,32 @@ export default function QRPage() {
 
     const handleIncidentReport = async (type = 'General Alert') => {
         try {
+            // First record it in backend database quietly
             await fetch('/api/public/incident', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ qr_id: id, type })
             });
+
+            // Native "Easy Way": Trigger Phone's SMS App to all Emergency Contacts
+            if (data?.emergency_contacts && data.emergency_contacts.length > 0) {
+                // Extract and clean numbers
+                const numbers = data.emergency_contacts
+                    .map(c => typeof c === 'object' ? c.number : c)
+                    .filter(num => num)
+                    .map(num => num.replace(/[^\d+]/g, ''))
+                    .join(',');
+                
+                if (numbers) {
+                    const separator = navigator.userAgent.match(/iPad|iPhone|iPod/) ? '&' : '?';
+                    const message = encodeURIComponent(`🚨 Aidlyn Alert:\nIssue: ${type}\n\nSomeone scanned your vehicle's QR sticker and reported this. Please check on your vehicle.`);
+                    
+                    // Opens the native Messages app pre-filled with numbers and text!
+                    window.location.href = `sms:${numbers}${separator}body=${message}`;
+                }
+            }
+
+            // Show Confirmation UI
             setMode('incident');
         } catch (e) {
             console.error(e);
@@ -241,8 +262,9 @@ export default function QRPage() {
 
             </div>
 
-            <div style={{ padding: '1.5rem', opacity: 0.5, fontSize: '0.75rem', letterSpacing: '1px', textTransform: 'uppercase', color: 'var(--text-muted)' }}>
-                Secured by Aidlyn
+            <div style={{ padding: '1.5rem', opacity: 0.5, fontSize: '0.75rem', letterSpacing: '1px', textTransform: 'uppercase', color: 'var(--text-muted)', textAlign: 'center' }}>
+                <div>Secured by Aidlyn</div>
+                <div style={{ fontSize: '0.65rem', marginTop: '0.25rem', opacity: 0.8 }}>Built by Prashant Maurya & Pushpak</div>
             </div>
         </div>
     );

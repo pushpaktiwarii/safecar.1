@@ -27,17 +27,19 @@ router.get('/qr/:qr_id', (req, res) => {
 });
 
 router.post('/incident', (req, res) => {
-    const { qr_id, location } = req.body;
+    const { qr_id, type } = req.body;
 
     // Verify QR exists
     const profile = db.prepare('SELECT qr_id FROM qr_profiles WHERE qr_id = ?').get(qr_id);
     if (!profile) return res.status(404).json({ error: "Invalid QR" });
 
     const id = uuidv4();
-    db.prepare('INSERT INTO incidents (id, qr_id, location) VALUES (?, ?, ?)').run(id, qr_id, location || "");
+    // Assuming 'location' column exists, we can save the 'type' in it or add a new column. 
+    // Since we only have location for now, we'll store the 'type' in the 'location' column as a fallback till we expand DB.
+    db.prepare('INSERT INTO incidents (id, qr_id, location) VALUES (?, ?, ?)').run(id, qr_id, type || "General Alert");
 
     // Optional: Trigger notification logic here (mock)
-    console.log(`[INCIDENT REPORTED] QR: ${qr_id}, Loc: ${location}`);
+    console.log(`[INCIDENT REPORTED] QR: ${qr_id}, Alert Type: ${type}`);
 
     res.json({ success: true, incident_id: id });
 });
