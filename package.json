@@ -1,0 +1,17 @@
+{
+    "name": "aidlyn-root",
+    "version": "1.0.0",
+    "description": "Root script for Aidlyn project",
+    "scripts": {
+        "install-all": "cd server && npm install && cd ../client && npm install",
+        "dev:server": "cd server && node src/index.js",
+        "dev:client": "cd client && npm run dev",
+        "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\""
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "devDependencies": {
+        "concurrently": "^9.2.1"
+    }
+}
