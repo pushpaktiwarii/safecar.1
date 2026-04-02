@@ -13,6 +13,7 @@ Aidlyn ensures that helpers and rescuers can notify you about your vehicle (Acci
 - **Glassmorphism UI**: Premium "Bento Grid" layout with dynamic hovering, sophisticated typography, and engaging micro-animations.
 - **Total Privacy**: Users can instantly toggle their contact visibility on or off. Rescuers don't need an app to scan or report an incident.
 - **Smart WhatsApp Integration**: Allows rescuers to send a pre-formatted WhatsApp message with one tap.
+- **Live Location Sharing**: Rescuers can opt-in to attach their precise GPS location, instantly sending the owner a tap-to-navigate Google Maps link to the vehicle's location.
 
 ## 🚀 Local Development Quick Start
 
