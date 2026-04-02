@@ -68,7 +68,7 @@ export default function QRPage() {
                     .filter(num => num)
                     .map(num => num.replace(/[^\d+]/g, ''))
                     .join(',');
-                
+
                 if (numbers) {
                     const separator = navigator.userAgent.match(/iPad|iPhone|iPod/) ? '&' : '?';
                     let messageText = `🚨 Aidlyn Alert:\nIssue: ${type}\n\nSomeone scanned your vehicle's QR sticker and reported this. Please check on your vehicle.`;
@@ -76,7 +76,7 @@ export default function QRPage() {
                         messageText += `\n\nCurrent Location: ${location}`;
                     }
                     const message = encodeURIComponent(messageText);
-                    
+
                     // Opens the native Messages app pre-filled with numbers and text!
                     window.location.href = `sms:${numbers}${separator}body=${message}`;
                 }
