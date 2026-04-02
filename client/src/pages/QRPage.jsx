@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { Phone, AlertTriangle, CheckCircle, ArrowLeft, Car, Bike, Truck, HelpCircle, HeartPulse, Siren, MessageCircle, ShieldAlert, Key, Wind, CircleDashed } from 'lucide-react';
+import { Phone, AlertTriangle, CheckCircle, ArrowLeft, Car, Bike, Truck, HelpCircle, HeartPulse, Siren, MessageCircle, ShieldAlert, Key, Wind, CircleDashed, MapPin } from 'lucide-react';
 
 export default function QRPage() {
     const { id } = useParams();
@@ -8,6 +8,8 @@ export default function QRPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [mode, setMode] = useState('view'); // view | incident | contact
+    const [location, setLocation] = useState(null);
+    const [locationLoading, setLocationLoading] = useState(false);
 
     useEffect(() => {
         fetchData();
@@ -27,6 +29,26 @@ export default function QRPage() {
             setError('Network error');
         }
         setLoading(false);
+    };
+
+    const requestLocation = () => {
+        setLocationLoading(true);
+        if ("geolocation" in navigator) {
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    setLocation(`https://maps.google.com/?q=${position.coords.latitude},${position.coords.longitude}`);
+                    setLocationLoading(false);
+                },
+                (error) => {
+                    console.error(error);
+                    setLocationLoading(false);
+                    alert("Location access denied or unavailable.");
+                }
+            );
+        } else {
+            alert("Geolocation is not supported by your browser.");
+            setLocationLoading(false);
+        }
     };
 
     const handleIncidentReport = async (type = 'General Alert') => {
@@ -49,7 +71,11 @@ export default function QRPage() {
                 
                 if (numbers) {
                     const separator = navigator.userAgent.match(/iPad|iPhone|iPod/) ? '&' : '?';
-                    const message = encodeURIComponent(`🚨 Aidlyn Alert:\nIssue: ${type}\n\nSomeone scanned your vehicle's QR sticker and reported this. Please check on your vehicle.`);
+                    let messageText = `🚨 Aidlyn Alert:\nIssue: ${type}\n\nSomeone scanned your vehicle's QR sticker and reported this. Please check on your vehicle.`;
+                    if (location) {
+                        messageText += `\n\nCurrent Location: ${location}`;
+                    }
+                    const message = encodeURIComponent(messageText);
                     
                     // Opens the native Messages app pre-filled with numbers and text!
                     window.location.href = `sms:${numbers}${separator}body=${message}`;
@@ -134,6 +160,16 @@ export default function QRPage() {
                 {mode === 'view' && (
                     <div className="fade-scale-in" style={{ marginTop: 'auto', marginBottom: 'auto', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                         <button
+                            className="clean-btn"
+                            onClick={requestLocation}
+                            disabled={locationLoading || location}
+                            style={{ background: location ? 'rgba(0, 230, 118, 0.1)' : 'transparent', color: location ? 'var(--success)' : 'var(--text-main)', border: location ? '1px solid rgba(0, 230, 118, 0.3)' : '1px dashed var(--border)' }}
+                        >
+                            <MapPin size={24} />
+                            <span>{locationLoading ? 'Fetching GPS...' : (location ? 'Location Attached ✅' : 'Locate My Position (Optional)')}</span>
+                        </button>
+
+                        <button
                             className="clean-btn btn-primary-clean"
                             onClick={() => setMode('contact')}
                         >
@@ -170,6 +206,12 @@ export default function QRPage() {
                                 // Clean number for whatsapp routing
                                 const waNum = num.replace(/\D/g, '');
 
+                                let waText = `🚨 Aidlyn Alert:\nThis is an emergency contact regarding your vehicle.`;
+                                if (location) {
+                                    waText += `\n\nCurrent Location: ${location}`;
+                                }
+                                const waUrl = `https://wa.me/${waNum}?text=${encodeURIComponent(waText)}`;
+
                                 return (
                                     <div key={i} className="clean-contact-card">
                                         <div style={{ marginBottom: '1rem' }}>
@@ -180,7 +222,7 @@ export default function QRPage() {
                                             <a href={`tel:${num}`} className="clean-action-btn solid-call">
                                                 <Phone size={18} /> Call
                                             </a>
-                                            <a href={`https://wa.me/${waNum}`} target="_blank" rel="noreferrer" className="clean-action-btn solid-whatsapp">
+                                            <a href={waUrl} target="_blank" rel="noreferrer" className="clean-action-btn solid-whatsapp">
                                                 <MessageCircle size={18} /> WhatsApp
                                             </a>
                                         </div>
