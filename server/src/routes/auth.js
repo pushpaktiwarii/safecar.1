@@ -10,16 +10,16 @@ router.post('/signup', async (req, res) => {
     const { email, password } = req.body;
     if (!email || !password) return res.status(400).json({ error: "Email and Password required" });
 
-    // Check if user exists
-    const existing = db.prepare('SELECT * FROM users WHERE email = ?').get(email);
-    if (existing) return res.status(400).json({ error: "User already exists" });
-
     try {
+        // Check if user exists
+        const result = await db.query('SELECT * FROM users WHERE email = $1', [email]);
+        if (result.rows.length > 0) return res.status(400).json({ error: "User already exists" });
+
         const hashedPassword = await bcrypt.hash(password, 10);
         const userId = uuidv4();
 
-        db.prepare('INSERT INTO users (id, email, password) VALUES (?, ?, ?)')
-            .run(userId, email, hashedPassword);
+        await db.query('INSERT INTO users (id, email, password) VALUES ($1, $2, $3)',
+            [userId, email, hashedPassword]);
 
         // Auto login after signup
         const token = jwt.sign({ id: userId }, process.env.JWT_SECRET, { expiresIn: '7d' });
@@ -45,29 +45,35 @@ router.post('/login', async (req, res) => {
 
     if (!email || !password) return res.status(400).json({ error: "Email and Password required" });
 
-    const user = db.prepare('SELECT * FROM users WHERE email = ?').get(email);
-    if (!user) {
-        console.log(`[Auth] User not found: ${email}`);
-        return res.status(400).json({ error: "Invalid credentials" });
+    try {
+        const result = await db.query('SELECT * FROM users WHERE email = $1', [email]);
+        const user = result.rows[0];
+        if (!user) {
+            console.log(`[Auth] User not found: ${email}`);
+            return res.status(400).json({ error: "Invalid credentials" });
+        }
+
+        const isMatch = await bcrypt.compare(password, user.password);
+        if (!isMatch) {
+            console.log(`[Auth] Password mismatch for: ${email}`);
+            return res.status(400).json({ error: "Invalid credentials" });
+        }
+
+        const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, { expiresIn: '7d' });
+
+        res.cookie('token', token, {
+            httpOnly: true,
+            secure: false, // Set true in production
+            sameSite: 'lax',
+            maxAge: 7 * 24 * 60 * 60 * 1000
+        });
+
+        console.log(`[Auth] Login successful for: ${email}`);
+        res.json({ success: true, user: { id: user.id, email: user.email } });
+    } catch(err) {
+        console.error(err);
+        res.status(500).json({ error: "Server error" });
     }
-
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-        console.log(`[Auth] Password mismatch for: ${email}`);
-        return res.status(400).json({ error: "Invalid credentials" });
-    }
-
-    const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, { expiresIn: '7d' });
-
-    res.cookie('token', token, {
-        httpOnly: true,
-        secure: false, // Set true in production
-        sameSite: 'lax',
-        maxAge: 7 * 24 * 60 * 60 * 1000
-    });
-
-    console.log(`[Auth] Login successful for: ${email}`);
-    res.json({ success: true, user: { id: user.id, email: user.email } });
 });
 
 router.post('/logout', (req, res) => {

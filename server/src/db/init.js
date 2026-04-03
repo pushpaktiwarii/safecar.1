@@ -1,49 +1,54 @@
-const Database = require('better-sqlite3');
-const path = require('path');
+const { Pool } = require('pg');
+require('dotenv').config();
 
-const dbPath = path.resolve(__dirname, 'aidlyn.db');
-const db = new Database(dbPath);
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: {
+    rejectUnauthorized: false // Required for some hosted PostgreSQL like Render
+  }
+});
 
-const initDb = () => {
-  // Users table (Owners) - UPDATED for Email/Password
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS users (
-      id TEXT PRIMARY KEY,
-      email TEXT UNIQUE,
-      password TEXT, -- Hashed password
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    )
-  `);
+const initDb = async () => {
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS users (
+        id TEXT PRIMARY KEY,
+        email TEXT UNIQUE,
+        password TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
 
-  // QR Data table
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS qr_profiles (
-      qr_id TEXT PRIMARY KEY,
-      user_id TEXT NOT NULL,
-      owner_name TEXT,
-      emergency_contacts TEXT, -- JSON string of contacts
-      is_active INTEGER DEFAULT 1,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY(user_id) REFERENCES users(id)
-    )
-  `);
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS qr_profiles (
+        qr_id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        owner_name TEXT,
+        emergency_contacts TEXT,
+        is_active INTEGER DEFAULT 1,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        city TEXT,
+        blood_group TEXT,
+        vehicle_type TEXT,
+        FOREIGN KEY(user_id) REFERENCES users(id)
+      )
+    `);
 
-  try { db.exec("ALTER TABLE qr_profiles ADD COLUMN city TEXT"); } catch(e) {}
-  try { db.exec("ALTER TABLE qr_profiles ADD COLUMN blood_group TEXT"); } catch(e) {}
-  try { db.exec("ALTER TABLE qr_profiles ADD COLUMN vehicle_type TEXT"); } catch(e) {}
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS incidents (
+        id TEXT PRIMARY KEY,
+        qr_id TEXT NOT NULL,
+        timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        location TEXT,
+        FOREIGN KEY(qr_id) REFERENCES qr_profiles(qr_id)
+      )
+    `);
 
-  // Incidents table (Optional tracking)
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS incidents (
-      id TEXT PRIMARY KEY,
-      qr_id TEXT NOT NULL,
-      timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-      location TEXT,
-      FOREIGN KEY(qr_id) REFERENCES qr_profiles(qr_id)
-    )
-  `);
-
-  console.log("Database initialized at " + dbPath);
+    console.log("PostgreSQL Database initialized successfully");
+  } catch (error) {
+    console.error("Database initialization error:", error);
+  }
 };
 
-module.exports = { db, initDb };
+// Export `db` as the pool object, which has `query` method.
+module.exports = { db: pool, initDb };
